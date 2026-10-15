@@ -141,7 +141,8 @@ export class App implements AfterViewInit, OnDestroy {
       });
 
       const calm = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
-      const drawCloth = cloth ? this.makeCloth(cloth, calm) : null;
+      const logo = root.querySelector<HTMLElement>('.x-image');
+      const drawCloth = cloth ? this.makeCloth(cloth, calm, logo) : null;
       const drawMeshes = meshes.map((c) => this.makeMesh(c, calm));
 
       const loop = () => {
@@ -169,7 +170,7 @@ export class App implements AfterViewInit, OnDestroy {
   }
 
   // A sheet of tiny arrows that billows like cloth and turns away from the mouse.
-  private makeCloth(canvas: HTMLCanvasElement, calm: boolean) {
+  private makeCloth(canvas: HTMLCanvasElement, calm: boolean, logo: HTMLElement | null) {
     const ctx = canvas.getContext('2d');
     if (!ctx) return null;
     const step = 24;
@@ -187,6 +188,12 @@ export class App implements AfterViewInit, OnDestroy {
       const mx = this.mouse.x - r.left;
       const my = this.mouse.y - r.top;
       const reach = 150;
+
+      // Over the round logo the arrows fade to a faint shimmer so the logo stays clear.
+      const lr = logo?.getBoundingClientRect();
+      const lx = lr ? lr.left + lr.width / 2 - r.left : -9999;
+      const ly = lr ? lr.top + lr.height / 2 - r.top : -9999;
+      const lrad = lr ? Math.min(lr.width, lr.height) / 2 : 1;
 
       ctx.clearRect(0, 0, w, h);
       ctx.lineWidth = 1.8;
@@ -216,7 +223,10 @@ export class App implements AfterViewInit, OnDestroy {
           }
 
           const light = 0.5 + 0.5 * Math.sin(wave * 1.2);
-          ctx.strokeStyle = `rgba(225, 235, 250, ${0.3 + 0.65 * light})`;
+          const n = Math.hypot(px - lx, py - ly) / lrad;
+          const k = Math.min(1, Math.max(0, (n - 0.9) / 0.25));
+          const fade = 0.18 + 0.82 * k * k * (3 - 2 * k);
+          ctx.strokeStyle = `rgba(225, 235, 250, ${(0.3 + 0.65 * light) * fade})`;
 
           const c = Math.cos(ang);
           const s = Math.sin(ang);

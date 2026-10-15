@@ -26,14 +26,13 @@
 /* Front page */
 .front-page { position: relative; height: 100vh; height: 100dvh; overflow: hidden; background: radial-gradient(circle at 25% 50%, #0d1522, #000 70%); }
 .shade { position: absolute; inset: 0; z-index: 2; pointer-events: none; background: linear-gradient(180deg, rgba(0,0,0,.3), rgba(0,0,0,0) 40%, rgba(0,0,0,.4)); }
-.cloth { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 3; pointer-events: none; }
+.cloth { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 4; pointer-events: none; }
 
-/* Logo: left side, turned so its face looks toward the right */
+/* Logo: left side, straight; the arrow canvas passes faintly over it */
 .x-image {
-  position: absolute; z-index: 4; left: 4%; top: 50%; width: min(44%, 1080px); max-height: 78%; height: auto;
+  position: absolute; z-index: 3; left: 4%; top: 50%; width: min(44%, 1080px); max-height: 78%; height: auto;
   object-fit: contain; pointer-events: none;
-  transform: translateY(-50%) perspective(1500px) rotateY(28deg);
-  transform-origin: left center;
+  transform: translateY(-50%);
   filter: drop-shadow(0 30px 40px rgba(0,0,0,.7));
 }
 

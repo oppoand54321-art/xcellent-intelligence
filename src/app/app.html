@@ -1,113 +1,60 @@
-<div class="page">
-  <canvas #swarmCanvas class="wake-canvas" aria-hidden="true"></canvas>
+<div class="dot" aria-hidden="true"></div>
 
-  <nav class="top-nav">
-    <button type="button" class="nav-link" (click)="goTo('services')">SERVICES</button>
-    <button type="button" class="nav-link" (click)="goTo('contact')">CONTACT</button>
+<header class="nav-box">
+  <a class="brand" href="#home" (click)="go('home', $event)">Xcellent Intelligence</a>
+  <nav aria-label="Main">
+    <a href="#home" (click)="go('home', $event)">Home</a>
+    @for (s of sections; track s.id) {
+      <a [href]="'#' + s.id" (click)="go(s.id, $event)">{{ s.nav }}</a>
+    }
+    <!-- Place your existing report component here, unchanged: <app-report></app-report> -->
   </nav>
+</header>
 
-  <section class="hero">
-    <section class="image-section">
-      <img src="/X-img.png" alt="Xcellent Intelligence Logo" (click)="onLogoClick()" />
-    </section>
+<main class="front-page" id="home">
+  <div class="shade" aria-hidden="true"></div>
+  <canvas class="cloth" aria-hidden="true"></canvas>
+  <img class="x-image" src="/X-img.png" alt="Xcellent Intelligence Technology Solutions" />
 
-    <section class="content-section">
-      <h1 class="shine-text">Welcome to Xcellent Intelligence</h1>
-      <p class="line l1">Precision-built digital systems for brands that refuse average.</p>
-      <p class="line l2">Web, product, ERP and AI — engineered as one intelligence layer.</p>
-      <p class="line l3">From first pixel to last automation, the work stays sharp.</p>
-      <p class="line l4">Xcellent Intelligence. Quiet power. Visible results.</p>
-    </section>
-
-    <button
-      type="button"
-      class="helper-bot"
-      (click)="openHelp(); $event.stopPropagation()"
-      (mouseenter)="openHelp()"
-      aria-label="Open help"
-    >
-      <span class="ant left"><i></i></span>
-      <span class="ant right"><i></i></span>
-      <span class="ear left"></span>
-      <span class="ear right"></span>
-      <span class="head">
-        <span class="eye left"></span>
-        <span class="eye right"></span>
-        <span class="blush left"></span>
-        <span class="blush right"></span>
-        <span class="smile"></span>
-        <span class="grill"></span>
-      </span>
-    </button>
-
-    @if (helpOpen) {
-      <div class="help-panel" (click)="$event.stopPropagation()" (mouseenter)="openHelp()">
-        <div class="chat-log">
-          @for (m of chatLog; track $index) {
-            <p class="bubble" [class.bot]="m.from === 'bot'" [class.user]="m.from === 'user'">{{ m.text }}</p>
-          }
-        </div>
-        <textarea #helpBox rows="3" placeholder="Type here..."></textarea>
-        <button type="button" class="help-send" (click)="onHelpSend(helpBox); helpBox.value = ''">Send</button>
-      </div>
-    }
-  </section>
-
-  <section class="services" id="services" #servicesSec (click)="hideCard()">
-    <div class="services-col left" [class.in]="servicesIn">
-      @for (item of leftServices; track item.id) {
-        <button
-          type="button"
-          class="svc-heading"
-          (mouseenter)="showCard(item); $event.stopPropagation()"
-          (click)="$event.stopPropagation()"
-        >
-          {{ item.title }}
-        </button>
-      }
+  <div class="hero-copy">
+    <h1>Intelligent systems, engineered end to end.</h1>
+    <p>ERP, SaaS, AI, mobile apps, 3D and AR, and DevOps from one engineering team.</p>
+    <div class="actions">
+      <a class="btn primary" href="#erp-saas" (click)="go('erp-saas', $event)">Explore Technologies</a>
+      <a class="btn" [href]="contactHref">Request a Live Demo</a>
     </div>
+  </div>
+</main>
 
-    <div class="services-col right" [class.in]="servicesIn">
-      @for (item of rightServices; track item.id) {
-        <button
-          type="button"
-          class="svc-heading"
-          (mouseenter)="showCard(item); $event.stopPropagation()"
-          (click)="$event.stopPropagation()"
-        >
-          {{ item.title }}
-        </button>
-      }
+@for (s of sections; track s.id) {
+  <section class="panel" [class.flip]="$odd" [id]="s.id">
+    <div class="slide-3d reveal">
+      <canvas class="mesh" [attr.data-shape]="s.shape" aria-hidden="true"></canvas>
     </div>
-
-    @if (activeCard) {
-      <article
-        class="metal-card"
-        [attr.data-tone]="activeCard.tone"
-        (mouseenter)="keepCard()"
-        (mouseleave)="hideCard()"
-        (click)="$event.stopPropagation()"
-      >
-        <p class="card-kicker">XCELLENT INTELLIGENCE</p>
-        <h2>{{ activeCard.title }}</h2>
-        @for (line of activeCard.lines; track line) {
-          <p class="card-line">{{ line }}</p>
+    <div class="info reveal">
+      <p class="tag">{{ s.tag }}</p>
+      <h2>{{ s.title }}</h2>
+      <p class="intro">{{ s.intro }}</p>
+      <ul>
+        @for (p of s.points; track p) {
+          <li>{{ p }}</li>
         }
-        <button type="button" class="view-details" (click)="onViewDetails(activeCard)">VIEW DETAILS</button>
-      </article>
-    }
-  </section>
-
-  <section class="contact" id="contact">
-    <h2 class="contact-title">CONTACT</h2>
-    <a class="contact-mail" href="mailto:info@xcellentintelligence.com">info@xcellentintelligence.com</a>
-    <p class="contact-web">xcellentintelligence.com</p>
-    <div class="socials">
-      <a href="https://x.com/" target="_blank" rel="noopener">X</a>
-      <a href="https://www.youtube.com/" target="_blank" rel="noopener">YouTube</a>
-      <a href="https://www.facebook.com/" target="_blank" rel="noopener">Facebook</a>
-      <a href="https://www.instagram.com/" target="_blank" rel="noopener">Instagram</a>
-      <a href="https://www.linkedin.com/" target="_blank" rel="noopener">LinkedIn</a>
+      </ul>
+      <p class="demo">Live demo available on request.</p>
+      <a class="btn primary" [href]="contactHref">Request a Live Demo</a>
     </div>
   </section>
-</div>
+}
+
+<footer class="footer" id="contact">
+  <div>
+    <strong>Xcellent Intelligence</strong>
+    <p>Live demos are available on request.</p>
+  </div>
+  <nav aria-label="Footer">
+    <a href="#home" (click)="go('home', $event)">Home</a>
+    @for (s of sections; track s.id) {
+      <a [href]="'#' + s.id" (click)="go(s.id, $event)">{{ s.nav }}</a>
+    }
+  </nav>
+</footer>

@@ -1,277 +1,392 @@
-import {
-  AfterViewInit,
-  Component,
-  ElementRef,
-  HostListener,
-  NgZone,
-  OnDestroy,
-  ViewChild,
-} from '@angular/core';
+import { AfterViewInit, Component, ElementRef, NgZone, OnDestroy, inject } from '@angular/core';
 
-export type ServiceCard = {
-  id: number;
+interface Section {
+  id: string;
+  nav: string;
   title: string;
-  lines: string[];
-  tone: 'red' | 'yellow' | 'green' | 'blue' | 'gold' | 'silver' | 'orange' | 'purple';
-};
+  tag: string;
+  intro: string;
+  shape: 'erp' | 'ai' | 'mobile' | 'three-d' | 'devops';
+  points: string[];
+}
 
-type Ripple = { x: number; y: number; r: number; life: number; max: number };
-type Spark = { x: number; y: number; vx: number; vy: number; life: number };
-
-const WA_NUMBER = '923XXXXXXXXX';
+interface Mesh {
+  v: number[][];
+  e: [number, number][];
+  dots?: boolean;
+}
 
 @Component({
   selector: 'app-root',
-  standalone: true,
+  imports: [],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
 export class App implements AfterViewInit, OnDestroy {
-  @ViewChild('swarmCanvas', { static: true })
-  canvasRef!: ElementRef<HTMLCanvasElement>;
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly zone = inject(NgZone);
 
-  @ViewChild('servicesSec')
-  servicesRef?: ElementRef<HTMLElement>;
+  // Replace with your own, e.g. 'mailto:you@domain.com' or 'https://wa.me/92XXXXXXXXXX'
+  protected readonly contactHref = '#contact';
 
-  helpOpen = false;
-  servicesIn = false;
-  activeCard: ServiceCard | null = null;
-  chatStep: 0 | 1 | 2 = 0;
-  chatLog: { from: 'bot' | 'user'; text: string }[] = [];
-
-  leftServices: ServiceCard[] = [
-    { id: 1, title: 'WEB DEVELOPMENT', lines: ['CUSTOM WEBSITES & E-COMMERCE', 'FAST, HIGH-PERFORMANCE BUILDS'], tone: 'red' },
-    { id: 2, title: 'DESIGN SERVICES', lines: ['UI/UX & BRAND IDENTITY', 'MOTION GRAPHICS ANIMATION'], tone: 'gold' },
-    { id: 3, title: 'CUSTOM ERP', lines: ['ENTERPRISE RESOURCE PLANNING', 'FULL UAE VAT/WPS COMPLIANCE'], tone: 'blue' },
-    { id: 4, title: 'WARM MARKETING', lines: ['SMM ACROSS IG, TIKTOK, FB', 'PAID ADS MANAGEMENT & BRAND DEVELOPMENT'], tone: 'orange' },
+  protected readonly sections: Section[] = [
+    {
+      id: 'erp-saas',
+      nav: 'ERP & SaaS',
+      title: 'ERP & SaaS',
+      tag: 'Business systems and cloud software',
+      intro: 'Complete business management and cloud products, built to run in the browser.',
+      shape: 'erp',
+      points: [
+        'ERP: accounting, inventory, CRM and workflow automation in one connected system.',
+        'Dashboards that turn daily records into clear business views.',
+        'SaaS: multi-tenant cloud software with a private workspace for every customer.',
+        'Subscription handling, admin controls and instant updates for all users.',
+      ],
+    },
+    {
+      id: 'ai',
+      nav: 'AI',
+      title: 'Artificial Intelligence',
+      tag: 'AI and machine learning',
+      intro: 'Intelligent software that works alongside people and removes repetitive work.',
+      shape: 'ai',
+      points: [
+        'AI agents and agent orchestration for multi-step tasks.',
+        'AI coding assistants and developer tools.',
+        'LLM integrations and AI APIs connected to your own systems.',
+        'Automation and intelligent workflows, backed by GPU computing infrastructure.',
+      ],
+    },
+    {
+      id: 'mobile',
+      nav: 'Mobile & APK',
+      title: 'Mobile & APK',
+      tag: 'Android and mobile applications',
+      intro: 'Mobile applications designed for real phones, from first screen to installable APK.',
+      shape: 'mobile',
+      points: [
+        'Android APK applications with a native-feeling experience.',
+        'Progressive Web Apps where a browser-based app fits better.',
+        'Offline support and push notifications.',
+        'Connected to the same backend as your ERP or SaaS product.',
+      ],
+    },
+    {
+      id: 'three-d',
+      nav: '3D & AR',
+      title: '3D & AR',
+      tag: '3D programming and augmented reality',
+      intro: 'Real-time graphics and spatial experiences, programmed from the ground up.',
+      shape: 'three-d',
+      points: [
+        '3D programming and rendering, including interactive web-based 3D.',
+        'Real-time visualization and technical simulations.',
+        '3D product visualization that customers can rotate and explore.',
+        'ARKit augmented reality experiences for Apple devices.',
+      ],
+    },
+    {
+      id: 'devops',
+      nav: 'DevOps',
+      title: 'DevOps & Cloud',
+      tag: 'Infrastructure and delivery',
+      intro: 'Reliable infrastructure and automated delivery behind every product.',
+      shape: 'devops',
+      points: [
+        'CI/CD pipelines that test and deploy every change.',
+        'Docker and Kubernetes for consistent, scalable deployments.',
+        'Server monitoring and automation.',
+        'Cloud infrastructure with clear deployment workflows.',
+      ],
+    },
   ];
 
-  rightServices: ServiceCard[] = [
-    { id: 5, title: 'APP DEVELOPMENT', lines: ['NATIVE IOS & ANDROID APPS', 'CROSS-PLATFORM FLUTTER DEVELOPMENT'], tone: 'green' },
-    { id: 6, title: 'AI AGENTS', lines: ['VOICE AI AGENTS', 'MULTI-AGENT AUTOMATION SYSTEMS'], tone: 'purple' },
-    { id: 7, title: 'CUSTOM CRM', lines: ['WHATSAPP INTEGRATION', 'AI-POWERED CUSTOMER MANAGEMENT'], tone: 'silver' },
-    { id: 8, title: 'COLD MARKETING', lines: ['B2B EMAIL MARKETING', 'LINKEDIN OUTREACH & COLD CALLING'], tone: 'yellow' },
-  ];
-
-  private ctx: CanvasRenderingContext2D | null = null;
   private raf = 0;
-  private running = false;
-  private cssW = 1;
-  private cssH = 1;
-  private dpr = 1;
-  private pointer = { x: 0, y: 0, px: 0, py: 0 };
-  private ripples: Ripple[] = [];
-  private sparks: Spark[] = [];
-  private emitAcc = 0;
+  private cleanups: Array<() => void> = [];
   private observer?: IntersectionObserver;
+  private mouse = { x: -1000, y: -1000 };
 
-  constructor(private zone: NgZone) {}
-
-  ngAfterViewInit(): void {
-    const canvas = this.canvasRef.nativeElement;
-    this.ctx = canvas.getContext('2d', { alpha: true });
-    if (!this.ctx) return;
-    this.resize();
-    this.pointer.x = this.pointer.px = this.cssW * 0.5;
-    this.pointer.y = this.pointer.py = this.cssH * 0.4;
-
-    this.zone.runOutsideAngular(() => {
-      this.running = true;
-      const tick = () => {
-        if (!this.running) return;
-        this.step();
-        this.draw();
-        this.raf = requestAnimationFrame(tick);
-      };
-      this.raf = requestAnimationFrame(tick);
-    });
-
-    if (this.servicesRef) {
-      this.observer = new IntersectionObserver(
-        (entries) => {
-          if (entries.some((e) => e.isIntersecting)) this.servicesIn = true;
-        },
-        { threshold: 0.28 }
-      );
-      this.observer.observe(this.servicesRef.nativeElement);
-    }
+  protected go(id: string, e: Event) {
+    e.preventDefault();
+    this.host.nativeElement.querySelector('#' + id)?.scrollIntoView({ behavior: 'smooth' });
   }
 
-  ngOnDestroy(): void {
-    this.running = false;
+  ngAfterViewInit() {
+    const root = this.host.nativeElement;
+
+    if (typeof IntersectionObserver !== 'undefined') {
+      this.observer = new IntersectionObserver(
+        (entries) => entries.forEach((en) => en.target.classList.toggle('in', en.isIntersecting)),
+        { threshold: 0.25 },
+      );
+      root.querySelectorAll('.reveal').forEach((el) => this.observer!.observe(el));
+    }
+
+    const cloth = root.querySelector<HTMLCanvasElement>('canvas.cloth');
+    const meshes = Array.from(root.querySelectorAll<HTMLCanvasElement>('canvas.mesh'));
+    const dot = root.querySelector<HTMLElement>('.dot');
+
+    // Animation runs outside Angular so it never blocks change detection or tests.
+    this.zone.runOutsideAngular(() => {
+      const on = <K extends keyof WindowEventMap>(type: K, fn: (e: WindowEventMap[K]) => void) => {
+        window.addEventListener(type, fn as EventListener);
+        this.cleanups.push(() => window.removeEventListener(type, fn as EventListener));
+      };
+
+      on('mousemove', (e) => {
+        this.mouse.x = e.clientX;
+        this.mouse.y = e.clientY;
+        if (dot) dot.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`;
+      });
+
+      const calm = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+      const drawCloth = cloth ? this.makeCloth(cloth, calm) : null;
+      const drawMeshes = meshes.map((c) => this.makeMesh(c, calm));
+
+      const loop = () => {
+        drawCloth?.();
+        drawMeshes.forEach((d) => d?.());
+        this.raf = requestAnimationFrame(loop);
+      };
+      loop();
+    });
+  }
+
+  ngOnDestroy() {
     cancelAnimationFrame(this.raf);
+    this.cleanups.forEach((fn) => fn());
     this.observer?.disconnect();
   }
 
-  onLogoClick(): void {}
-  openHelp(): void {
-    this.helpOpen = true;
-    if (this.chatLog.length === 0) {
-      this.chatStep = 0;
-      this.chatLog = [
-        { from: 'bot', text: 'How can I help you?' },
-      ];
-    }
-  }
-  closeHelp(): void {
-    this.helpOpen = false;
-  }
-  keepCard(): void {}
-  hideCard(): void { this.activeCard = null; }
-
-  goTo(id: 'services' | 'contact'): void {
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+  private fitCanvas(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) {
+    const r = canvas.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 3);
+    canvas.width = Math.max(1, r.width * dpr);
+    canvas.height = Math.max(1, r.height * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { w: r.width, h: r.height };
   }
 
-  sendWhatsApp(text: string): void {
-    const msg = (text || 'Hello').trim();
-    window.open(`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank');
+  // A sheet of tiny arrows that billows like cloth and turns away from the mouse.
+  private makeCloth(canvas: HTMLCanvasElement, calm: boolean) {
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+    const step = 24;
+    let size = this.fitCanvas(canvas, ctx);
+
+    const resize = () => (size = this.fitCanvas(canvas, ctx));
+    window.addEventListener('resize', resize);
+    this.cleanups.push(() => window.removeEventListener('resize', resize));
+
+    return () => {
+      const r = canvas.getBoundingClientRect();
+      if (r.bottom < 0 || r.top > window.innerHeight) return;
+      const { w, h } = size;
+      const t = calm ? 0 : performance.now() / 1000;
+      const mx = this.mouse.x - r.left;
+      const my = this.mouse.y - r.top;
+      const reach = 150;
+
+      ctx.clearRect(0, 0, w, h);
+      ctx.lineWidth = 1.8;
+      ctx.lineCap = 'round';
+
+      for (let gy = step / 2; gy < h; gy += step) {
+        for (let gx = step / 2; gx < w; gx += step) {
+          const wave =
+            Math.sin(gx * 0.012 + t * 1.4) +
+            Math.cos(gy * 0.015 + t * 1.1) +
+            Math.sin((gx + gy) * 0.008 - t * 0.9);
+
+          let px = gx + Math.sin(gy * 0.02 + t * 1.2) * 7;
+          let py = gy + Math.cos(gx * 0.02 + t) * 7;
+          let ang = wave * 0.9;
+
+          const dx = px - mx;
+          const dy = py - my;
+          const d = Math.hypot(dx, dy);
+          if (d < reach) {
+            const f = 1 - d / reach;
+            let diff = Math.atan2(dy, dx) - ang;
+            diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+            ang += diff * f;
+            px += (dx / (d || 1)) * f * 20;
+            py += (dy / (d || 1)) * f * 20;
+          }
+
+          const light = 0.5 + 0.5 * Math.sin(wave * 1.2);
+          ctx.strokeStyle = `rgba(225, 235, 250, ${0.3 + 0.65 * light})`;
+
+          const c = Math.cos(ang);
+          const s = Math.sin(ang);
+          const tx = px + c * 7;
+          const ty = py + s * 7;
+          ctx.beginPath();
+          ctx.moveTo(px - c * 7, py - s * 7);
+          ctx.lineTo(tx, ty);
+          ctx.lineTo(tx - Math.cos(ang - 0.5) * 4, ty - Math.sin(ang - 0.5) * 4);
+          ctx.moveTo(tx, ty);
+          ctx.lineTo(tx - Math.cos(ang + 0.5) * 4, ty - Math.sin(ang + 0.5) * 4);
+          ctx.stroke();
+        }
+      }
+    };
   }
 
-  onHelpSend(box: HTMLTextAreaElement): void {
-    const text = (box.value || '').trim();
-    if (!text) return;
-    this.chatLog = [...this.chatLog, { from: 'user', text }];
+  // ---------- Wireframe 3D objects (plain canvas maths, no libraries) ----------
 
-    const yes = /^(yes|yeah|yep|y|ok|okay|sure|haan|han|ji|please)\b/i.test(text);
-
-    if (this.chatStep === 0) {
-      this.chatStep = 1;
-      this.chatLog = [
-        ...this.chatLog,
-        { from: 'bot', text: 'Would you like to talk to a human?' },
-      ];
-      return;
-    }
-
-    if (yes) {
-      this.chatLog = [
-        ...this.chatLog,
-        { from: 'bot', text: 'Connecting you to a human on WhatsApp…' },
-      ];
-      const history = this.chatLog
-        .filter((m) => m.from === 'user')
-        .map((m) => m.text)
-        .join(' | ');
-      this.sendWhatsApp(history);
-      return;
-    }
-
-    this.chatLog = [
-      ...this.chatLog,
-      { from: 'bot', text: 'No problem. Type Yes if you want to talk to a human.' },
-    ];
-  }
-
-  showCard(item: ServiceCard): void { this.activeCard = item; }
-  onViewDetails(_item: ServiceCard): void {}
-
-  @HostListener('document:click', ['$event'])
-  onDocClick(e: MouseEvent): void {
-    const t = e.target as HTMLElement | null;
-    if (!t) return;
-    if (t.closest('.helper-bot') || t.closest('.help-panel')) return;
-    this.helpOpen = false;
-  }
-
-  @HostListener('window:resize')
-  onResize(): void { this.resize(); }
-
-  @HostListener('window:mousemove', ['$event'])
-  onMove(e: MouseEvent): void {
-    this.pointer.x = e.clientX;
-    this.pointer.y = e.clientY;
-  }
-
-  @HostListener('window:touchmove', ['$event'])
-  onTouch(e: TouchEvent): void {
-    if (!e.touches.length) return;
-    this.pointer.x = e.touches[0].clientX;
-    this.pointer.y = e.touches[0].clientY;
-  }
-
-  private resize(): void {
-    const canvas = this.canvasRef.nativeElement;
-    this.cssW = window.innerWidth;
-    this.cssH = window.innerHeight;
-    this.dpr = Math.min(window.devicePixelRatio || 1, 2);
-    canvas.width = Math.floor(this.cssW * this.dpr);
-    canvas.height = Math.floor(this.cssH * this.dpr);
-    canvas.style.width = this.cssW + 'px';
-    canvas.style.height = this.cssH + 'px';
-    this.ctx?.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
-  }
-
-  private step(): void {
-    const dx = this.pointer.x - this.pointer.px;
-    const dy = this.pointer.y - this.pointer.py;
-    const dist = Math.hypot(dx, dy);
-    this.emitAcc += dist;
-
-    if (this.emitAcc > 14) {
-      this.emitAcc = 0;
-      this.ripples.push({
-        x: this.pointer.x,
-        y: this.pointer.y,
-        r: 4,
-        life: 1,
-        max: 28 + Math.min(dist, 18),
-      });
-      if (this.sparks.length < 40) {
-        this.sparks.push({
-          x: this.pointer.x,
-          y: this.pointer.y,
-          vx: -dx * 0.08 + (Math.random() - 0.5) * 0.6,
-          vy: -dy * 0.08 + (Math.random() - 0.5) * 0.6,
-          life: 1,
-        });
+  private boxMesh(w: number, h: number, d: number, cy = 0): Mesh {
+    const v: number[][] = [];
+    for (const x of [-1, 1]) for (const y of [-1, 1]) for (const z of [-1, 1]) v.push([(x * w) / 2, cy + (y * h) / 2, (z * d) / 2]);
+    const e: [number, number][] = [];
+    for (let i = 0; i < 8; i++) {
+      for (let j = i + 1; j < 8; j++) {
+        const diff = i ^ j;
+        if (diff === 1 || diff === 2 || diff === 4) e.push([i, j]);
       }
     }
-
-    for (let i = this.ripples.length - 1; i >= 0; i--) {
-      const r = this.ripples[i];
-      r.r += 0.85;
-      r.life -= 0.018;
-      if (r.life <= 0 || r.r > r.max) this.ripples.splice(i, 1);
-    }
-    for (let i = this.sparks.length - 1; i >= 0; i--) {
-      const s = this.sparks[i];
-      s.x += s.vx;
-      s.y += s.vy;
-      s.life -= 0.03;
-      if (s.life <= 0) this.sparks.splice(i, 1);
-    }
-
-    this.pointer.px = this.pointer.x;
-    this.pointer.py = this.pointer.y;
+    return { v, e };
   }
 
-  private draw(): void {
-    const ctx = this.ctx;
-    if (!ctx) return;
-    ctx.clearRect(0, 0, this.cssW, this.cssH);
-
-    for (const r of this.ripples) {
-      ctx.beginPath();
-      ctx.arc(r.x, r.y, r.r, 0, Math.PI * 2);
-      ctx.strokeStyle = `rgba(0, 0, 0, ${0.55 * r.life})`;
-      ctx.lineWidth = 1.4 * r.life;
-      ctx.stroke();
+  private prismMesh(n: number, r: number, h: number): Mesh {
+    const v: number[][] = [];
+    const e: [number, number][] = [];
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2;
+      v.push([Math.cos(a) * r, -h / 2, Math.sin(a) * r]);
     }
-
-    for (const s of this.sparks) {
-      ctx.fillStyle = `rgba(0, 0, 0, ${0.5 * s.life})`;
-      ctx.beginPath();
-      ctx.arc(s.x, s.y, 1.4 * s.life, 0, Math.PI * 2);
-      ctx.fill();
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2;
+      v.push([Math.cos(a) * r, h / 2, Math.sin(a) * r]);
     }
+    for (let i = 0; i < n; i++) {
+      const j = (i + 1) % n;
+      e.push([i, j], [n + i, n + j], [i, n + i]);
+    }
+    return { v, e };
+  }
 
-    ctx.beginPath();
-    ctx.arc(this.pointer.x, this.pointer.y, 5, 0, Math.PI * 2);
-    ctx.fillStyle = '#000';
-    ctx.fill();
-    ctx.lineWidth = 1.4;
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.9)';
-    ctx.stroke();
+  private merge(...parts: Mesh[]): Mesh {
+    const out: Mesh = { v: [], e: [] };
+    for (const p of parts) {
+      const off = out.v.length;
+      out.v.push(...p.v);
+      p.e.forEach(([a, b]) => out.e.push([a + off, b + off]));
+    }
+    return out;
+  }
+
+  private buildMesh(shape: string): Mesh {
+    switch (shape) {
+      case 'erp':
+        return this.merge(this.boxMesh(1.5, 0.28, 1.1, -0.5), this.boxMesh(1.5, 0.28, 1.1, 0), this.boxMesh(1.5, 0.28, 1.1, 0.5));
+      case 'ai': {
+        const t = (1 + Math.sqrt(5)) / 2;
+        const k = 0.95 / Math.sqrt(1 + t * t);
+        const raw: number[][] = [];
+        for (const a of [-1, 1]) for (const b of [-t, t]) raw.push([a, b, 0], [0, a, b], [b, 0, a]);
+        const v = raw.map((p) => p.map((n) => n * k));
+        const e: [number, number][] = [];
+        for (let i = 0; i < raw.length; i++) {
+          for (let j = i + 1; j < raw.length; j++) {
+            const d2 = (raw[i][0] - raw[j][0]) ** 2 + (raw[i][1] - raw[j][1]) ** 2 + (raw[i][2] - raw[j][2]) ** 2;
+            if (d2 < 4.1) e.push([i, j]);
+          }
+        }
+        return { v, e, dots: true };
+      }
+      case 'mobile': {
+        const body = this.boxMesh(0.75, 1.5, 0.14);
+        const screen: Mesh = {
+          v: [[-0.32, -0.66, 0.075], [-0.32, 0.66, 0.075], [0.32, 0.66, 0.075], [0.32, -0.66, 0.075]],
+          e: [[0, 1], [1, 2], [2, 3], [3, 0]],
+        };
+        return this.merge(body, screen);
+      }
+      case 'three-d': {
+        const R = 0.7;
+        const r = 0.3;
+        const nu = 28;
+        const nv = 12;
+        const v: number[][] = [];
+        const e: [number, number][] = [];
+        for (let u = 0; u < nu; u++) {
+          for (let w = 0; w < nv; w++) {
+            const a = (u / nu) * Math.PI * 2;
+            const b = (w / nv) * Math.PI * 2;
+            v.push([(R + r * Math.cos(b)) * Math.cos(a), r * Math.sin(b), (R + r * Math.cos(b)) * Math.sin(a)]);
+          }
+        }
+        for (let u = 0; u < nu; u++) {
+          for (let w = 0; w < nv; w++) {
+            const i = u * nv + w;
+            e.push([i, u * nv + ((w + 1) % nv)], [i, ((u + 1) % nu) * nv + w]);
+          }
+        }
+        return { v, e };
+      }
+      default:
+        return this.merge(this.prismMesh(10, 0.9, 0.5), this.prismMesh(10, 0.35, 0.95));
+    }
+  }
+
+  // Draws one object; it turns slowly on its own and turns further as the page scrolls.
+  private makeMesh(canvas: HTMLCanvasElement, calm: boolean) {
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+    const mesh = this.buildMesh(canvas.dataset['shape'] ?? '');
+    let size = this.fitCanvas(canvas, ctx);
+
+    const resize = () => (size = this.fitCanvas(canvas, ctx));
+    window.addEventListener('resize', resize);
+    this.cleanups.push(() => window.removeEventListener('resize', resize));
+
+    return () => {
+      const r = canvas.getBoundingClientRect();
+      if (r.bottom < 0 || r.top > window.innerHeight) return;
+      const { w, h } = size;
+      const t = calm ? 0 : performance.now() / 1000;
+      const prog = (r.top + r.height / 2 - window.innerHeight / 2) / window.innerHeight;
+      const ry = t * 0.35 - prog * Math.PI * 1.6;
+      const rx = 0.45 + prog * 0.7;
+      const cam = 3.4;
+      const sc = Math.min(w, h) * 0.34;
+      const cy = Math.cos(ry);
+      const sy = Math.sin(ry);
+      const cx = Math.cos(rx);
+      const sx = Math.sin(rx);
+
+      const pts = mesh.v.map(([x, y, z]) => {
+        const x1 = x * cy + z * sy;
+        const z1 = -x * sy + z * cy;
+        const y1 = y * cx - z1 * sx;
+        const z2 = y * sx + z1 * cx;
+        const k = cam / (cam + z2);
+        return { x: w / 2 + x1 * k * sc, y: h / 2 + y1 * k * sc, z: z2 };
+      });
+
+      ctx.clearRect(0, 0, w, h);
+      ctx.lineWidth = 1.5;
+      ctx.lineCap = 'round';
+      for (const [a, b] of mesh.e) {
+        const p = pts[a];
+        const q = pts[b];
+        const depth = 1 - ((p.z + q.z) / 2 + 1.5) / 3;
+        ctx.strokeStyle = `rgba(165, 205, 255, ${0.25 + 0.65 * Math.max(0, Math.min(1, depth))})`;
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+        ctx.lineTo(q.x, q.y);
+        ctx.stroke();
+      }
+      if (mesh.dots) {
+        ctx.fillStyle = 'rgba(110, 175, 255, 0.95)';
+        for (const p of pts) {
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+    };
   }
 }

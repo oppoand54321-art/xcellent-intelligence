@@ -7,6 +7,8 @@ interface Section {
   tag: string;
   intro: string;
   shape: 'erp' | 'ai' | 'mobile' | 'three-d' | 'devops';
+  image: string;
+  imageName: string;
   points: string[];
 }
 
@@ -37,6 +39,8 @@ export class App implements AfterViewInit, OnDestroy {
       tag: 'Business systems and cloud software',
       intro: 'Complete business management and cloud products, built to run in the browser.',
       shape: 'erp',
+      image: '/images/image-1.png',
+      imageName: 'image-1.png',
       points: [
         'ERP: accounting, inventory, CRM and workflow automation in one connected system.',
         'Dashboards that turn daily records into clear business views.',
@@ -51,6 +55,8 @@ export class App implements AfterViewInit, OnDestroy {
       tag: 'AI and machine learning',
       intro: 'Intelligent software that works alongside people and removes repetitive work.',
       shape: 'ai',
+      image: '/images/image-3.png',
+      imageName: 'image-3.png',
       points: [
         'AI agents and agent orchestration for multi-step tasks.',
         'AI coding assistants and developer tools.',
@@ -65,6 +71,8 @@ export class App implements AfterViewInit, OnDestroy {
       tag: 'Android and mobile applications',
       intro: 'Mobile applications designed for real phones, from first screen to installable APK.',
       shape: 'mobile',
+      image: '/images/image-5.png',
+      imageName: 'image-5.png',
       points: [
         'Android APK applications with a native-feeling experience.',
         'Progressive Web Apps where a browser-based app fits better.',
@@ -79,6 +87,8 @@ export class App implements AfterViewInit, OnDestroy {
       tag: '3D programming and augmented reality',
       intro: 'Real-time graphics and spatial experiences, programmed from the ground up.',
       shape: 'three-d',
+      image: '/images/image-4.png',
+      imageName: 'image-4.png',
       points: [
         '3D programming and rendering, including interactive web-based 3D.',
         'Real-time visualization and technical simulations.',
@@ -93,6 +103,8 @@ export class App implements AfterViewInit, OnDestroy {
       tag: 'Infrastructure and delivery',
       intro: 'Reliable infrastructure and automated delivery behind every product.',
       shape: 'devops',
+      image: '/images/image-2.png',
+      imageName: 'image-2.png',
       points: [
         'CI/CD pipelines that test and deploy every change.',
         'Docker and Kubernetes for consistent, scalable deployments.',
@@ -112,15 +124,31 @@ export class App implements AfterViewInit, OnDestroy {
     this.host.nativeElement.querySelector('#' + id)?.scrollIntoView({ behavior: 'smooth' });
   }
 
+  protected onImageError(event: Event) {
+    const image = event.target as HTMLImageElement;
+    image.closest('.service-image')?.classList.add('is-empty');
+    image.hidden = true;
+  }
+
+  protected onImageLoad(event: Event) {
+    const image = event.target as HTMLImageElement;
+    image.closest('.service-image')?.classList.remove('is-empty');
+    image.hidden = false;
+  }
+
   ngAfterViewInit() {
     const root = this.host.nativeElement;
 
     if (typeof IntersectionObserver !== 'undefined') {
       this.observer = new IntersectionObserver(
-        (entries) => entries.forEach((en) => en.target.classList.toggle('in', en.isIntersecting)),
-        { threshold: 0.25 },
+        (entries) =>
+          entries.forEach((en) =>
+            en.target.querySelectorAll('.reveal').forEach((el) => el.classList.toggle('in', en.isIntersecting)),
+          ),
+        { threshold: 0.1 },
       );
-      root.querySelectorAll('.reveal').forEach((el) => this.observer!.observe(el));
+      // Watch the untransformed section; the image itself starts off-screen for its entrance animation.
+      root.querySelectorAll('.panel').forEach((el) => this.observer!.observe(el));
     }
 
     const cloth = root.querySelector<HTMLCanvasElement>('canvas.cloth');

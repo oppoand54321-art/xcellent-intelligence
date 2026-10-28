@@ -27,10 +27,11 @@
 </main>
 
 @for (s of sections; track s.id) {
-  <section class="panel" [class.flip]="$odd" [id]="s.id">
-    <div class="slide-3d reveal">
-      <canvas class="mesh" [attr.data-shape]="s.shape" aria-hidden="true"></canvas>
-    </div>
+  <section class="panel" [id]="s.id">
+    <figure class="service-image reveal">
+      <img [src]="s.image" [alt]="s.title + ' project image'" (load)="onImageLoad($event)" (error)="onImageError($event)" />
+      <figcaption>Add {{ s.imageName }}</figcaption>
+    </figure>
     <div class="info reveal">
       <p class="tag">{{ s.tag }}</p>
       <h2>{{ s.title }}</h2>

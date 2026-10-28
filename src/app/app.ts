@@ -18,6 +18,12 @@ interface Mesh {
   dots?: boolean;
 }
 
+interface SocialLink {
+  name: string;
+  mark: string;
+  url: string;
+}
+
 @Component({
   selector: 'app-root',
   imports: [],
@@ -112,6 +118,13 @@ export class App implements AfterViewInit, OnDestroy {
         'Cloud infrastructure with clear deployment workflows.',
       ],
     },
+  ];
+
+  protected readonly socialLinks: SocialLink[] = [
+    { name: 'X / Twitter', mark: 'X', url: '' },
+    { name: 'Facebook', mark: 'f', url: '' },
+    { name: 'Instagram', mark: '◎', url: '' },
+    { name: 'LinkedIn', mark: 'in', url: '' },
   ];
 
   private raf = 0;

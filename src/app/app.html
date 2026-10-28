@@ -7,6 +7,7 @@
     @for (s of sections; track s.id) {
       <a [href]="'#' + s.id" (click)="go(s.id, $event)">{{ s.nav }}</a>
     }
+    <a href="#contact" (click)="go('contact', $event)">Contact</a>
     <!-- Place your existing report component here, unchanged: <app-report></app-report> -->
   </nav>
 </header>
@@ -47,15 +48,53 @@
   </section>
 }
 
-<footer class="footer" id="contact">
-  <div>
-    <strong>Xcellent Intelligence</strong>
-    <p>Live demos are available on request.</p>
+<section class="contact-page" id="contact" aria-labelledby="contact-title">
+  <div class="contact-heading">
+    <p class="tag">Contact</p>
+    <h2 id="contact-title">Let’s talk about your next project.</h2>
+    <p class="intro">Reach our team in Dubai or Karachi.</p>
   </div>
-  <nav aria-label="Footer">
-    <a href="#home" (click)="go('home', $event)">Home</a>
-    @for (s of sections; track s.id) {
-      <a [href]="'#' + s.id" (click)="go(s.id, $event)">{{ s.nav }}</a>
-    }
-  </nav>
-</footer>
+
+  <div class="contact-offices">
+    <article class="office-card">
+      <p class="tag">Dubai, UAE</p>
+      <h3>Office</h3>
+      <address>Office no. 22, Hashtag Business Center,<br />Bin Ham, Deira, Dubai</address>
+      <a class="contact-detail" href="tel:+971543770146">+971 54 377 0146</a>
+    </article>
+    <article class="office-card">
+      <p class="tag">Karachi, Pakistan</p>
+      <h3>Office</h3>
+      <address>Office no. 1, Mezzanine Floor, Siddique Bridge View,<br />Block 3, Nazimabad, Karachi, Pakistan</address>
+      <a class="contact-detail" href="tel:+923332230665">+92 333 223 0665</a>
+    </article>
+  </div>
+
+  <div class="contact-bottom">
+    <div class="contact-emails">
+      <div>
+        <p class="tag">Email</p>
+        <a href="mailto:info@xcellentintelligence.com">info@xcellentintelligence.com</a>
+      </div>
+      <div>
+        <p class="tag">Contact</p>
+        <a href="mailto:contact@xcellentintelligence.com">contact@xcellentintelligence.com</a>
+      </div>
+    </div>
+
+    <div class="social-block">
+      <p class="tag">Follow us</p>
+      <div class="social-links" aria-label="Social media">
+        @for (link of socialLinks; track link.name) {
+          @if (link.url) {
+            <a class="social-link" [href]="link.url" target="_blank" rel="noopener noreferrer" [attr.aria-label]="link.name" [title]="link.name">{{ link.mark }}</a>
+          } @else {
+            <span class="social-link pending" [attr.aria-label]="link.name + ' link pending'" [title]="link.name">{{ link.mark }}</span>
+          }
+        }
+      </div>
+    </div>
+  </div>
+
+  <p class="contact-copyright">© Xcellent Intelligence</p>
+</section>

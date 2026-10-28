@@ -85,16 +85,36 @@
 .info li { padding: 12px 16px; border-left: 3px solid #c3ccd6; background: rgba(255,255,255,.05); color: #c4d1e6; line-height: 1.5; font-size: 15px; }
 .demo { margin: 0 0 12px; color: #9fb2cf; font-size: 14px; }
 
-/* Footer */
-.footer {
-  display: flex; justify-content: space-between; align-items: center; gap: 24px; flex-wrap: wrap; padding: 36px 6%;
-  border-top: 1px solid rgba(220,232,255,.18); background: #05070a; color: #aebbd2;
+/* Final contact page */
+.contact-page {
+  min-height: 100vh; min-height: 100svh; display: flex; flex-direction: column; justify-content: center; gap: 28px;
+  padding: 120px 8% 30px; background: radial-gradient(circle at 15% 25%, #101a29, #030507 66%); color: #eaf2ff;
 }
-.footer p { margin: 6px 0 0; font-size: 14px; }
-.footer strong { color: #fff; }
-.footer nav { display: flex; gap: 6px 18px; flex-wrap: wrap; }
-.footer nav a { color: #cfdcf2; text-decoration: none; font-size: 14px; padding: 4px 0; }
-.footer nav a:hover, .footer nav a:focus-visible { color: #fff; text-decoration: underline; outline: none; }
+.contact-heading { max-width: 760px; }
+.contact-heading h2 { margin: 0 0 12px; color: #fff; font-size: clamp(34px, 5vw, 64px); line-height: 1.02; }
+.contact-heading .intro { margin: 0; }
+.contact-offices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.office-card {
+  padding: 22px 24px; border: 1px solid rgba(220,232,255,.18); border-radius: 10px;
+  background: rgba(255,255,255,.045); box-shadow: 0 16px 42px rgba(0,0,0,.24);
+}
+.office-card h3 { margin: 0 0 10px; color: #fff; font-size: 22px; }
+.office-card address { min-height: 48px; color: #c4d1e6; font-size: 15px; font-style: normal; line-height: 1.6; }
+.contact-detail, .contact-emails a { color: #eaf2ff; text-decoration: none; }
+.contact-detail { display: inline-block; margin-top: 12px; font-size: 16px; font-weight: 700; }
+.contact-detail:hover, .contact-emails a:hover { text-decoration: underline; }
+.contact-bottom { display: flex; align-items: end; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
+.contact-emails { display: flex; gap: 28px 48px; flex-wrap: wrap; }
+.contact-emails .tag, .social-block .tag { margin-bottom: 8px; }
+.social-links { display: flex; gap: 10px; }
+.social-link {
+  width: 42px; height: 42px; display: inline-grid; place-items: center; border: 1px solid rgba(220,232,255,.28);
+  border-radius: 50%; color: #eaf2ff; background: rgba(255,255,255,.05); font-size: 17px; font-weight: 800;
+  text-decoration: none; transition: background .2s, transform .2s;
+}
+.social-link:not(.pending):hover, .social-link:not(.pending):focus-visible { background: rgba(255,255,255,.18); transform: translateY(-2px); outline: none; }
+.social-link.pending { color: #71809a; border-style: dashed; cursor: default; }
+.contact-copyright { margin: 4px 0 0; padding-top: 16px; border-top: 1px solid rgba(220,232,255,.12); color: #8593aa; font-size: 13px; }
 
 @media (max-width: 1180px) { .brand { display: none; } }
 @media (max-width: 800px) {
@@ -109,6 +129,11 @@
   .service-image.in { transform: translateX(0) scale(1); }
   .info { transform: translateY(24px); }
   .info.in { transform: none; }
+  .contact-page { gap: 20px; padding: 130px 6% 24px; }
+  .contact-offices { grid-template-columns: 1fr; gap: 12px; }
+  .office-card { padding: 18px; }
+  .office-card address { min-height: auto; }
+  .contact-bottom, .contact-emails { align-items: start; flex-direction: column; gap: 18px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .service-image, .info { transition: none; transform: none; opacity: 1; }
